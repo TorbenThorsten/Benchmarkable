@@ -37,6 +37,7 @@ def parse_args():
     parser.add_argument("--s3", action="store_true", help="benchmark for S3 Storage")
     parser.add_argument("--fs", action="store_true", help="benchmark for local Filesystem (in progress)")
     parser.add_argument("--count", type=str, default="1", help="Count of Files to Write (e.g., '5')")
+    parser.add_argument("--size", type=str, default="1M", help="Explicit Filesize in MB or GB (e.g., '100M')")
     parser.add_argument("--randmin", type=str, help="Minimum size of random file (e.g., '100M')")
     parser.add_argument("--randmax", type=str, help="Maximum size of random file (e.g., '1G')")
 
@@ -97,7 +98,7 @@ def main():
 
     upload_stats = UploadStats()
 
-    # Custom ASCII art and some design
+    # Custom ASCII art and Design
     ascii_art = r"""
   ____                  _                          _         _     _      
  |  _ \                | |                        | |       | |   | |     
@@ -108,15 +109,15 @@ def main():
                                                                           
     """
     print(ascii_art)
-    print(f"Benchmark running on bucket {Fore.CYAN}{bucket_name}{Style.RESET_ALL}")
+    print(f"by TorbenThorsten")
+    print(f"\n\nBenchmark running on bucket {Fore.CYAN}{bucket_name}{Style.RESET_ALL}")
 
     with tqdm(total=int(args.count), desc="Benchmarking") as pbar:
         for _ in range(int(args.count)):
             if args.randmin is not None and args.randmax is not None:
                 size_in_bytes = generate_random_size(args.randmin, args.randmax)
             else:
-                print("Error: Specify both --randmin and --randmax to generate random file sizes.")
-                sys.exit(1)
+                size_in_bytes = parse_size(args.size)
 
             test_file_path = "benchmarkable"
             create_file(test_file_path, size_in_bytes)
