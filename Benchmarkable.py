@@ -1,5 +1,6 @@
 import argparse
 import sys
+import random
 import boto3
 import os
 import time
@@ -30,18 +31,17 @@ class UploadStats:
         print(f"Total Uploads Recorded: {len(self.upload_times)}")
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Benchmark-Programm für Dateisysteme und S3-Speicher")
-    parser.add_argument("--s3", action="store_true", help="Benchmark für S3-Speicher")
-    parser.add_argument("--fs", action="store_true", help="Benchmark für Dateisystem")
-    parser.add_argument("--read", action="store_true", help="Random Read-Modus")
-    parser.add_argument("--write", action="store_true", help="Random Write-Modus")
-    parser.add_argument("--count", type=int, default=1, help="Anzahl der Uploads")
-    parser.add_argument("--size", type=str, default="1M", help="Dateigröße in KB")
+    parser = argparse.ArgumentParser(description="Benchmark for Filesystems and S3 Storage Write Performances")
+    parser.add_argument("--s3", action="store_true", help="benchmark for S3 Storage")
+    parser.add_argument("--fs", action="store_true", help="benchmark for local Filesystem (in progress)")
+    parser.add_argument("--count", type=str, default="1", help="Count of Files to Write (e.g., '5')")
+    parser.add_argument("--randmin", type=str, help="Minimum size of random file (e.g., '100M')")
+    parser.add_argument("--randmax", type=str, help="Maximum size of random file (e.g., '1G')")
 
     # S3 Specific
     parser.add_argument("--access-key", required=True, help="AWS Access Key ID")
     parser.add_argument("--secret-key", required=True, help="AWS Secret Access Key")
-    parser.add_argument("--endpoint", required=True, help="Custom S3 endpoint URL")
+    parser.add_argument("--endpoint", required=True, help="S3 endpoint URL")
 
     return parser.parse_args()
 
@@ -52,12 +52,17 @@ def parse_size(size_str):
     elif size_str.endswith("g"):
         return int(size_str[:-1]) * 1024 * 1024 * 1024
     else:
-        print("Ungültiges Format für die Dateigröße. Verwenden Sie z. B. 20M oder 20G.")
+        print("Unsupported format. Use something like '100M' or '1G'.")
         sys.exit(1)
+
+def generate_random_size(randmin_str, randmax_str):
+    randmin = parse_size(randmin_str)
+    randmax = parse_size(randmax_str)
+    return random.randint(randmin, randmax)
 
 def upload_file(s3_client, bucket_name, file_path, file_size_mb):
     start_time = time.time()
-    s3_client.upload_file(file_path, bucket_name, "testfile.bin")
+    s3_client.upload_file(file_path, bucket_name, "benchmarkable")
     end_time = time.time()
     upload_time = end_time - start_time
     upload_speed_mb_s = file_size_mb / upload_time
@@ -83,20 +88,26 @@ def main():
     bucket_name = "benchmarkable-bucket"
     s3_client.create_bucket(Bucket=bucket_name)
 
-    size_in_bytes = parse_size(args.size)
-    test_file_path = "testfile.bin"
-    create_file(test_file_path, size_in_bytes)
-
     upload_stats = UploadStats()
 
-    with tqdm(total=args.count, desc="Benchmarking") as pbar:
-        for _ in range(args.count):
+    with tqdm(total=int(args.count), desc="Benchmarking") as pbar:
+        for _ in range(int(args.count)):
+            if args.randmin is not None and args.randmax is not None:
+                size_in_bytes = generate_random_size(args.randmin, args.randmax)
+            else:
+                print("Error: Specify both --randmin and --randmax to generate random file sizes.")
+                sys.exit(1)
+
+            test_file_path = "benchmarkable"
+            create_file(test_file_path, size_in_bytes)
+
             upload_time, upload_speed_mb_s = upload_file(s3_client, bucket_name, test_file_path, size_in_bytes / (1024 * 1024))
             upload_stats.record_upload(upload_time, size_in_bytes / (1024 * 1024))
-            pbar.update(1)  # Increment progress bar by 1 for each upload
 
-    delete_file(s3_client, bucket_name, "testfile.bin")
-    os.remove(test_file_path)
+            delete_file(s3_client, bucket_name, "benchmarkable")
+            os.remove(test_file_path)
+
+            pbar.update(1)  # Increment progress bar by 1 for each upload
 
     s3_client.delete_bucket(Bucket=bucket_name)
 
