@@ -1,10 +1,12 @@
 import argparse
 import sys
 import random
+import string
 import boto3
 import os
 import time
 from tqdm import tqdm
+from colorama import Fore, Style
 
 class UploadStats:
     def __init__(self):
@@ -25,9 +27,9 @@ class UploadStats:
         max_speed = max(self.upload_speeds)
         avg_speed = sum(self.upload_speeds) / len(self.upload_speeds)
 
-        print(f"Minimum Upload Speed: {min_speed:.2f} MB/s")
-        print(f"Maximum Upload Speed: {max_speed:.2f} MB/s")
-        print(f"Average Upload Speed: {avg_speed:.2f} MB/s")
+        print(f"{Fore.RED}Minimum Upload Speed: {min_speed:.2f} MB/s{Style.RESET_ALL}")
+        print(f"{Fore.GREEN}Maximum Upload Speed: {max_speed:.2f} MB/s{Style.RESET_ALL}")
+        print(f"{Fore.BLUE}Average Upload Speed: {avg_speed:.2f} MB/s{Style.RESET_ALL}")
         print(f"Total Uploads Recorded: {len(self.upload_times)}")
 
 def parse_args():
@@ -60,6 +62,10 @@ def generate_random_size(randmin_str, randmax_str):
     randmax = parse_size(randmax_str)
     return random.randint(randmin, randmax)
 
+def generate_random_string(length=5):
+    chars = string.ascii_lowercase + string.digits
+    return ''.join(random.choice(chars) for _ in range(length))
+
 def upload_file(s3_client, bucket_name, file_path, file_size_mb):
     start_time = time.time()
     s3_client.upload_file(file_path, bucket_name, "benchmarkable")
@@ -85,10 +91,24 @@ def main():
         endpoint_url=args.endpoint
     )
 
-    bucket_name = "benchmarkable-bucket"
+    unique_suffix = generate_random_string(5)
+    bucket_name = f"benchmarkable-bucket-{unique_suffix}"
     s3_client.create_bucket(Bucket=bucket_name)
 
     upload_stats = UploadStats()
+
+    # Custom ASCII art and some design
+    ascii_art = r"""
+  ____                  _                          _         _     _      
+ |  _ \                | |                        | |       | |   | |     
+ | |_) | ___ _ __   ___| |__  _ __ ___   __ _ _ __| | ____ _| |__ | | ___ 
+ |  _ < / _ \ '_ \ / __| '_ \| '_ ` _ \ / _` | '__| |/ / _` | '_ \| |/ _ \
+ | |_) |  __/ | | | (__| | | | | | | | | (_| | |  |   < (_| | |_) | |  __/
+ |____/ \___|_| |_|\___|_| |_|_| |_| |_|\__,_|_|  |_|\_\__,_|_.__/|_|\___|
+                                                                          
+    """
+    print(ascii_art)
+    print(f"Benchmark running on bucket {Fore.CYAN}{bucket_name}{Style.RESET_ALL}")
 
     with tqdm(total=int(args.count), desc="Benchmarking") as pbar:
         for _ in range(int(args.count)):
