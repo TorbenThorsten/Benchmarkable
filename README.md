@@ -6,7 +6,7 @@ This is a command-line benchmarking tool for testing file uploads to an S3-compa
 
 - Python 3.x
 - Boto3 library (`pip install boto3`)
-- tqdm (`pip install boto3`)
+- tqdm (`pip install tqmd`)
 
 ## Installation
 
