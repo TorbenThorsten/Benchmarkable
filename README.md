@@ -33,11 +33,11 @@ The script supports the following command-line arguments:
 
 ### Benchmark S3 upload speed for 5 file uploads of size 100 MB:
 
-<code>python Benchmarkable.py --s3 --count 5 --size 100M --access-key YOUR_ACCESS_KEY --secret-key YOUR_SECRET_KEY --endpoint YOUR_S3_ENDPOINT_URL</code>
+<code>python3 Benchmarkable.py --s3 --count 5 --size 100M --access-key YOUR_ACCESS_KEY --secret-key YOUR_SECRET_KEY --endpoint YOUR_S3_ENDPOINT_URL</code>
 
 ### Benchmark S3 upload speed for 10 file uploads of random sizes between 1 and 50 MB:
 
-<code>python Benchmarkable.py --s3 --randmin 1M --randmax 50M --size 100M --access-key YOUR_ACCESS_KEY --secret-key YOUR_SECRET_KEY --endpoint YOUR_S3_ENDPOINT_URL</code>
+<code>python3 Benchmarkable.py --s3 --randmin 1M --randmax 50M --count 10 --access-key YOUR_ACCESS_KEY --secret-key YOUR_SECRET_KEY --endpoint YOUR_S3_ENDPOINT_URL</code>
 
 ### Notes: 
 
